@@ -60,6 +60,14 @@ def train_one_epoch(model, data_loader, loss_func, optimiser, device):
 def train(model, data_loader, loss_func, optimiser, device, epochs):
     """
     Function that trains over all the epochs, one by one.
+
+    :param model: The feed-forward model class object
+    :param data_loader: Pytorch's DataLoader class object, with defined batch size for loading
+    :param loss_func: Function for evaluating th loss
+    :param optimiser: Adam optimizer, with learning rate given as LEARNING_RATE
+    :param device: CPU/GPU
+    :param epochs: The number of EPOCHS defined
+    :return:
     """
     for i in range(epochs):
         print(f"Epoch {i + 1}")
@@ -89,8 +97,8 @@ if __name__ == "__main__":
     loss_func = nn.CrossEntropyLoss()
     optimiser = torch.optim.Adam(feed_forward_net.parameters(), lr=LEARNING_RATE)
 
-    train(feed_forward_net,
-          train_data_loader,
+    train(model=feed_forward_net,
+          data_loader=train_data_loader,
           loss_func=loss_func,
           optimiser=optimiser,
           device=device, epochs=EPOCHS)

@@ -5,6 +5,9 @@ from torchvision import datasets
 from torchvision.transforms import ToTensor
 
 BATCH_SIZE = 128
+EPOCHS = 10
+LEARNING_RATE = 0.001
+
 
 class FeedForwardNet(nn.Module):
     def __init__(self):
@@ -13,7 +16,7 @@ class FeedForwardNet(nn.Module):
 
         # Add bunch of dense layers
         self.dense_layers = nn.Sequential(
-            nn.Linear(in_features=28*28, out_features=256),
+            nn.Linear(in_features=28 * 28, out_features=256),
             nn.ReLU(),
             nn.Linear(in_features=256, out_features=10)
         )
@@ -25,6 +28,7 @@ class FeedForwardNet(nn.Module):
         predictions = self.softmax(logits)
         return predictions
 
+
 def download_mnist_datasets():
     """
     :return: The train and test data downloaded from torchvision's MNIST repository
@@ -35,7 +39,36 @@ def download_mnist_datasets():
     return train_data, validation_data
 
 
-if __name__  == "__main__":
+def train_one_epoch(model, data_loader, loss_func, optimiser, device):
+    for input, target in data_loader:
+        input, target = input.to(device), target.to(device)
+
+        # Calculate loss
+        predictions = model(input)
+        loss = loss_func(predictions, target)
+
+        # Reset gradients to zero after every batch of iteration
+        optimiser.zero_grad()
+
+        # Backpropogate loss and update weights
+        loss.backward()  # Backpropogate
+        optimiser.step()  # Update the weights
+
+    print(f"Loss: {loss.item()}")
+
+
+def train(model, data_loader, loss_func, optimiser, device, epochs):
+    """
+    Function that trains over all the epochs, one by one.
+    """
+    for i in range(epochs):
+        print(f"Epoch {i + 1}")
+        train_one_epoch(model, data_loader, loss_func, optimiser, device)
+        print("----------------")
+    print("Training finished")
+
+
+if __name__ == "__main__":
     # Download MNIST dataset
     train_data, _ = download_mnist_datasets()
     print("MNIST dataset downloaded")
@@ -43,12 +76,25 @@ if __name__  == "__main__":
     # Create data loader for train set
     train_data_loader = DataLoader(train_data, batch_size=BATCH_SIZE)
 
-    # Build model
-
     # Check for GPU availability
     if torch.cuda.is_available():
         device = "cuda"
     else:
         device = "cpu"
 
-    feed_forward_net = FeedForwardNet().to(device=device)
+    # Build model
+    feed_forward_net = FeedForwardNet().to(device)
+
+    # Instantiate loss func + optimiser
+    loss_func = nn.CrossEntropyLoss()
+    optimiser = torch.optim.Adam(feed_forward_net.parameters(), lr=LEARNING_RATE)
+
+    train(feed_forward_net,
+          train_data_loader,
+          loss_func=loss_func,
+          optimiser=optimiser,
+          device=device, epochs=EPOCHS)
+
+    # Save the trained model
+    torch.save(feed_forward_net.state_dict(), "feedforwardnet.pth")
+    print("Model trained and saved to feedforwardnet.pth")

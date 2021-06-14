@@ -62,8 +62,8 @@ class UrbanSoundDataset(Dataset):
 
 
 if __name__ == "__main__":
-    ANNOTATIONS_FILE = "./datasets/UrbanSound8K/metadata/UrbanSound8K.csv"
-    AUDIO_DIR = "./datasets/UrbanSound8K/audio"
+    ANNOTATIONS_FILE = "D:/Datasets/UrbanSound8K/metadata/UrbanSound8K.csv"
+    AUDIO_DIR = "D:/Datasets/UrbanSound8K/audio"
     SAMPLE_RATE = 16000
 
     mel_spectrogram = torchaudio.transforms.MelSpectrogram(

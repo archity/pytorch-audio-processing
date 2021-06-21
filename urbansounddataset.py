@@ -7,10 +7,11 @@ import torch
 
 class UrbanSoundDataset(Dataset):
 
-    def __init__(self, annotations_file, audio_dir, transformation, target_sample_rate, num_samples):
+    def __init__(self, annotations_file, audio_dir, transformation, target_sample_rate, num_samples, device):
         self.annotations = pd.read_csv(annotations_file)
         self.audio_dir = audio_dir
-        self.transformation = transformation
+        self.device = device
+        self.transformation = transformation.to(self.device)
         self.target_sample_rate = target_sample_rate
         self.num_samples = num_samples
 
@@ -24,6 +25,9 @@ class UrbanSoundDataset(Dataset):
         # Get the label associated with this audio sample path
         label = self._get_audio_sample_label(index)
         signal, sr = torchaudio.load(audio_sample_path)
+
+        # Register the signal to the device
+        signal = signal.to(self.device)
 
         # Make sure that sample rate is same for all
         signal = self._resample_if_necessary(signal, sr)
@@ -93,6 +97,12 @@ if __name__ == "__main__":
     SAMPLE_RATE = 22050
     NUM_SAMPLES = 22050
 
+    if torch.cuda.is_available():
+        device = "cuda"
+    else:
+        device = "cpu"
+    print(f"Using device {device}")
+
     mel_spectrogram = torchaudio.transforms.MelSpectrogram(
         sample_rate=SAMPLE_RATE,
         n_fft=1024,
@@ -100,7 +110,7 @@ if __name__ == "__main__":
         n_mels=64
     )
 
-    usd = UrbanSoundDataset(ANNOTATIONS_FILE, AUDIO_DIR, mel_spectrogram, SAMPLE_RATE, NUM_SAMPLES)
+    usd = UrbanSoundDataset(ANNOTATIONS_FILE, AUDIO_DIR, mel_spectrogram, SAMPLE_RATE, NUM_SAMPLES, device)
 
     print(f"There are {len(usd)} samples in the dataset.")
     signal, label = usd[1]

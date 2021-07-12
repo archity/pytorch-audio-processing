@@ -1,20 +1,23 @@
 import torch
+import torchaudio
 
-# Import the defined FF class and load function from train.py
-from train import FeedForwardNet, download_mnist_datasets
+from cnn import CNNNetwork
+from urbansounddataset import UrbanSoundDataset
+from train import AUDIO_DIR, ANNOTATIONS_FILE, SAMPLE_RATE, NUM_SAMPLES
 
 class_mapping = [
-    "0",
-    "1",
-    "2",
-    "3",
-    "4",
-    "5",
-    "6",
-    "7",
-    "8",
-    "9"
+    "air_conditioner",
+    "car_horn",
+    "children_playing",
+    "dog_bark",
+    "drilling",
+    "engine_idling",
+    "gun_shot",
+    "jackhammer",
+    "siren",
+    "street_music"
 ]
+
 
 def predict(model, input, target, class_mapping):
     model.eval()
@@ -33,19 +36,36 @@ def predict(model, input, target, class_mapping):
 
 
 if __name__ == "__main__":
-
     # Load back the model
-    feedforward_net = FeedForwardNet()
-    state_dict = torch.load("feedforwardnet.pth")
-    feedforward_net.load_state_dict(state_dict=state_dict)
+    cnn = CNNNetwork()
+    state_dict = torch.load("trained_model.pth", map_location=torch.device('cpu'))
+    cnn.load_state_dict(state_dict=state_dict)
 
-    # Load MNIST val dataset
-    _, validation_data = download_mnist_datasets()
+    # load urban sound dataset dataset
+    mel_spectrogram = torchaudio.transforms.MelSpectrogram(
+        sample_rate=SAMPLE_RATE,
+        n_fft=1024,
+        hop_length=512,
+        n_mels=64
+    )
+
+    usd = UrbanSoundDataset(ANNOTATIONS_FILE,
+                            AUDIO_DIR,
+                            mel_spectrogram,
+                            SAMPLE_RATE,
+                            NUM_SAMPLES,
+                            device="cpu")
 
     # Get a sample from the validation dataset for inference
-    input, target = validation_data[0][0], validation_data[0][1]
+    # [num_channels, freq, time]
+    index = 0
+    input, target = usd[index][0], usd[index][1]
+
+    # Introduce another dimension on the first (0th) index
+    # [batchsize(=1), num_channels, freq, time]
+    input.unsqueeze_(0)
 
     # Make an inference
-    predicted, expected = predict(feedforward_net, input, target, class_mapping)
+    predicted, expected = predict(cnn, input, target, class_mapping)
 
     print(f"Predicted: '{predicted}', expected: '{expected}'")
